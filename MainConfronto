@@ -24,7 +24,7 @@ public class MainConfronto {
         // Skeletons → evo (bordo viola brillante)
         // Cannon    → normale (bordo arancione standard, non evo)
         Deck mazzo2 = new Deck(new Carta[]{
-            new Carta("Cannon",    3, "edificio",    false, false),
+            new Carta("Cannon",    3, "edificio",    true, false),
             new Carta("Musketeer", 4, "truppa",      false, true),
             new Carta("Skeletons", 1, "truppa",      true,  false),
             new Carta("Hog Rider", 4, "truppa",      false, false),
