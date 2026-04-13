@@ -22,12 +22,12 @@ public class Utente {
 	}
 	
 	public Utente(Utente u) {
-		u.nome = this.nome;
-		u.cognome = this.cognome;
-		u.username = this.username;
-		u.email = this.email;
-		u.telefono = this.telefono;
-		
+		this.nome = u.nome;
+		this.cognome = u.cognome;
+		this.username = u.username;
+		this.email = u.email;
+		this.telefono = u.telefono;
+
 		utentiCreati++;
 	}
 
@@ -76,8 +76,6 @@ public class Utente {
 		this.nome = t.nextLine();
 		System.out.print("inserisci il tuo cognome");
 		this.cognome = t.nextLine();
-		System.out.print("inserisci il tuo nome");
-		this.nome = t.nextLine();
 		System.out.print("inserisci il tuo username");
 		this.username = t.nextLine();
 		System.out.print("inserisci la tua email");

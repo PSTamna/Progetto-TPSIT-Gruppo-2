@@ -67,6 +67,7 @@ public class Carta {
         this.nome = t.nextLine();
         System.out.print("Inserisci il costo in elisir: (da 1 a 9)");
         this.elisir = t.nextInt();
+        t.nextLine(); // consuma il '\n' residuo dopo nextInt()
         System.out.print("Inserisci il tipo della carta (Tank/Struttura/Spell/Supporto/Win Con): ");
         this.tipo = t.nextLine();
         System.out.print("La carta ha un evoluzione? (true/false): ");

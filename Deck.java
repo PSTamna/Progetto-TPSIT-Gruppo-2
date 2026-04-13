@@ -177,12 +177,17 @@ public class Deck {
      *   4. Sinergie        — coppie di carte che si potenziano a vicenda
      */
     public double confrontaDeck(Deck avversario) {
+        if (avversario == null) {
+            throw new IllegalArgumentException("Il mazzo avversario non può essere null.");
+        }
+        if (numeroCarte == 0 || avversario.numeroCarte == 0) {
+            return 50.0;
+        }
+
         double puntoProprio    = calcolaPunteggio();
         double puntoAvversario = avversario.calcolaPunteggio();
 
         double totale = puntoProprio + puntoAvversario;
-        if (totale == 0) return 50.0;
-
         double percentuale = (puntoProprio / totale) * 100.0;
         percentuale = Math.max(5.0, Math.min(95.0, percentuale));
         return Math.round(percentuale * 10.0) / 10.0;
