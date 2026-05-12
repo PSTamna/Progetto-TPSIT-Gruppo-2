@@ -1,3 +1,5 @@
+package esercizi;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -192,10 +194,13 @@ public class RoyaleAnalizer extends JFrame {
     private static class DeckContext {
         final Set<String>    selected  = new HashSet<>();
         final List<Runnable> refreshers = new ArrayList<>();
+        String skill = "Unranked";
+        Runnable onChange;
         void selectCard(String rem, String add) {
             if (rem != null) selected.remove(rem);
             if (add != null) selected.add(add);
             for (Runnable r : refreshers) r.run();
+            if (onChange != null) onChange.run();
         }
         void refresh() { for (Runnable r : refreshers) r.run(); }
     }
@@ -332,6 +337,10 @@ public class RoyaleAnalizer extends JFrame {
         DeckContext topDeck = new DeckContext();
         DeckContext botDeck = new DeckContext();
 
+        Runnable recompute = () -> recalculateWinRate(topDeck, botDeck);
+        topDeck.onChange = recompute;
+        botDeck.onChange = recompute;
+
         // ════ SEZIONE SUPERIORE ════
         for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 4; col++) {
@@ -343,7 +352,7 @@ public class RoyaleAnalizer extends JFrame {
             }
         }
         content.add(makeTowerCard(x5, 0, CW, TH));
-        content.add(makeSkillBtn("Skill", BLUE_BTN, x5, TH + G, CW, SH));
+        content.add(makeSkillBtn("Skill", BLUE_BTN, x5, TH + G, CW, SH, topDeck));
 
         int barY = sectionH + barMarg;
         content.add(makeProgressBar(0.47f, 0, barY, sectionW, BH));
@@ -359,7 +368,7 @@ public class RoyaleAnalizer extends JFrame {
                 else                       content.add(makeSimpleCard(cx,cy,CW,CH,botDeck));
             }
         }
-        content.add(makeSkillBtn("Skill", RED_BTN, x5, botY, CW, SH));
+        content.add(makeSkillBtn("Skill", RED_BTN, x5, botY, CW, SH, botDeck));
         content.add(makeTowerCard(x5, botY + SH + G, CW, TH));
 
         // Canvas (centra il contenuto)
@@ -798,6 +807,45 @@ public class RoyaleAnalizer extends JFrame {
         return p;
     }
 
+    // ── Integrazione Backend ──────────────────────────────────────
+    private void recalculateWinRate(DeckContext top, DeckContext bot) {
+        if (top.selected.isEmpty() && bot.selected.isEmpty()) {
+            setProgress(0.5f);
+            return;
+        }
+
+        Deck mazzo1 = new Deck();
+        for (String n : top.selected) {
+            Carta c = cercaCartaFlessibile(n);
+            if (c != null) mazzo1.aggiuntaCarta(c);
+        }
+
+        Deck mazzo2 = new Deck();
+        for (String n : bot.selected) {
+            Carta c = cercaCartaFlessibile(n);
+            if (c != null) mazzo2.aggiuntaCarta(c);
+        }
+
+        // Il backend si aspetta le skill esatte. Utente.LIVELLI_SKILL viene gestito nei pulsanti.
+        double pct1 = mazzo1.confrontaDeck(mazzo2, top.skill, bot.skill);
+        setProgress((float) (pct1 / 100.0));
+    }
+
+    private Carta cercaCartaFlessibile(String guiName) {
+        String query = guiName.toLowerCase().replace(".", "").replace(" ", "");
+        // 1. Cerca match esatto (normalizzato)
+        for (Carta c : CartePool.TUTTE_LE_CARTE) {
+            String poolName = c.getNome().toLowerCase().replace(".", "").replace(" ", "");
+            if (poolName.equals(query)) return c;
+        }
+        // 2. Cerca match parziale
+        for (Carta c : CartePool.TUTTE_LE_CARTE) {
+            String poolName = c.getNome().toLowerCase().replace(".", "").replace(" ", "");
+            if (poolName.contains(query) || query.contains(poolName)) return c;
+        }
+        return null;
+    }
+
     // ── Carta normale ─────────────────────────────────────────────
     private JPanel makeCard(Color bg, int x, int y, int w, int h) {
         boolean[] st = {false, false};
@@ -819,7 +867,7 @@ public class RoyaleAnalizer extends JFrame {
     }
 
     // ── Pulsante Skill ────────────────────────────────────────────
-    private JPanel makeSkillBtn(String text, Color bg, int x, int y, int w, int h) {
+    private JPanel makeSkillBtn(String text, Color bg, int x, int y, int w, int h, DeckContext deck) {
         boolean[] st = {false, false}; String[] label = {text};
         JPanel p = new JPanel(null) {
             @Override protected void paintComponent(Graphics g) {
@@ -848,14 +896,25 @@ public class RoyaleAnalizer extends JFrame {
         p.setOpaque(false); p.setBounds(x, y, w, h);
         p.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         JPopupMenu menu = new JPopupMenu();
-        for (String rank : SKILL_RANKS) {
+        for (String rank : esercizi.Utente.LIVELLI_SKILL) {
+            if (rank.equals("Unranked")) continue; // "Rimuovi" equivale a Unranked
             JMenuItem item = new JMenuItem(rank);
-            item.addActionListener(e -> { label[0]=rank; p.repaint(); });
+            item.addActionListener(e -> { 
+                label[0]=rank; 
+                deck.skill = rank;
+                if (deck.onChange != null) deck.onChange.run();
+                p.repaint(); 
+            });
             menu.add(item);
         }
         menu.addSeparator();
         JMenuItem rmvSkill = new JMenuItem("Rimuovi");
-        rmvSkill.addActionListener(e -> { label[0]=text; p.repaint(); }); // torna a "Skill"
+        rmvSkill.addActionListener(e -> { 
+            label[0]=text; 
+            deck.skill = "Unranked";
+            if (deck.onChange != null) deck.onChange.run();
+            p.repaint(); 
+        }); // torna a "Skill"
         menu.add(rmvSkill);
         addClick(p, st, menu);
         return p;
